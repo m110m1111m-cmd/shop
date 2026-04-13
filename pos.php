@@ -1,0 +1,173 @@
+<?php
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
+$username = $_SESSION['username'] ?? 'User';
+?>
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS - ລະບົບຂາຍເຄື່ອງໜ້າຮ້ານ</title>
+    <link rel="stylesheet" href="css/pos.css">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Camera Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body>
+
+    <div class="pos-container">
+        <!-- Selection Panel (Products & Categories) -->
+        <div class="selection-panel">
+            <div class="top-bar">
+                <div class="barcode-input-wrapper">
+                    <input type="text" id="barcode-input" placeholder="ຄົ້ນຫາບາໂຄດ ຫຼື ພິມຊື່ສິນຄ້າ..." autofocus autocomplete="off">
+                    <button id="btn-open-camera" class="btn-scanner" title="ສະແກນຜ່ານກ້ອງ"><i class="fas fa-camera"></i></button>
+                    <div id="search-results" class="search-results"></div>
+                </div>
+            </div>
+
+            <!-- Category Filter Bar -->
+            <div class="category-bar" id="category-bar">
+                <button class="category-pill active" onclick="filterByCategory('all')">ທັງໝົດ</button>
+                <!-- Categories will be loaded here -->
+            </div>
+
+            <!-- Product Grid -->
+            <div class="product-grid" id="product-grid">
+                <!-- Products will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Cart Panel (Right side) -->
+        <div class="cart-panel">
+            <div class="admin-top-links">
+                <span id="cashier-name"><i class="fas fa-user-circle"></i> <?php echo htmlspecialchars($username); ?></span>
+                <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                    <a href="products.php" title="ຈັດການສິນຄ້າ"><i class="fas fa-boxes"></i></a>
+                    <a href="sales.php" title="ປະຫວັດການຂາຍ"><i class="fas fa-chart-line"></i></a>
+                    <a href="staff.php" title="ພະນັກງານ"><i class="fas fa-users"></i></a>
+                    <a href="settings.php" title="ຕັ້ງຄ່າ"><i class="fas fa-cog"></i></a>
+                <?php endif; ?>
+                <a href="api/logout.php" title="ອອກຈາກລະບົບ" style="color: #ff4d4f;"><i class="fas fa-sign-out-alt"></i></a>
+            </div>
+
+            <div class="cart-area">
+                <div class="cart-header">
+                    <div>ຮູບ</div>
+                    <div>ສິນຄ້າ</div>
+                    <div>ລາຄາ</div>
+                    <div>ຈຳນວນ</div>
+                    <div>ລາຍການລະ (ສ່ວນຫຼຸດ)</div>
+                    <div>ລວມ</div>
+                    <div></div>
+                </div>
+                <div class="cart-items" id="cart-items-container">
+                    <!-- Cart items will be injected here by JS -->
+                </div>
+
+                <div class="cart-footer">
+                    <div class="summary-info">
+                        <div class="summary-line">
+                            <span>ສ່ວນຫຼຸດທ້າຍບິນ:</span>
+                            <div class="discount-pill">
+                                <input type="text" id="global-discount" placeholder="0 ຫຼື 0%" onchange="renderCart()">
+                            </div>
+                        </div>
+                        <div class="summary-line">
+                            <span>ລວມຍອດກ່ອນພາສີ:</span>
+                            <span id="subtotal-amount">0 <span class="currency-symbol">₭</span></span>
+                        </div>
+                        <div class="summary-line">
+                            <span>ພາສີ (VAT <span id="vat-rate-display">7</span>%):</span>
+                            <span id="vat-amount">0 <span class="currency-symbol">₭</span></span>
+                        </div>
+                        <div class="summary-line grand-total-line">
+                            <span>ຍອດລວມທັງໝົດ:</span>
+                            <span id="grand-total">0 <span class="currency-symbol">₭</span></span>
+                        </div>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-pay-cash" onclick="openPaymentModal('cash')">
+                            <i class="fas fa-money-bill-wave"></i> ເງິນສົດ (F8)
+                        </button>
+                        <button class="btn btn-pay-transfer" onclick="openPaymentModal('transfer')">
+                            <i class="fas fa-qrcode"></i> ໂອນ (F9)
+                        </button>
+                        <button class="btn btn-cancel" onclick="clearCart()">
+                            <i class="fas fa-trash-alt"></i> ຍົກເລີກ (F12)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal (Cash) -->
+    <div class="modal-overlay" id="payment-modal">
+        <div class="modal-content">
+            <div class="modal-header" id="modal-title">ຮັບເງິນສົດ</div>
+            <div class="summary-row" style="font-size: 1.2rem; margin-bottom: 0.5rem;">
+                <span>ຍອດຕ້ອງຊໍາລະ:</span>
+                <strong id="modal-amount-due" style="color: var(--primary); font-size: 1.5rem;">0 ₭</strong>
+            </div>
+            
+            <div id="cash-input-section">
+                <label style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 5px; display: block;">ຈຳນວນເງິນຮັບມາ (Cash In):</label>
+                <input type="number" id="cash-received" class="modal-input" placeholder="0" onkeyup="calculateChange()" style="font-size: 2rem; font-weight: 700; height: 60px; text-align: center; margin-bottom: 10px;">
+                
+                <!-- Quick Cash Buttons -->
+                <div class="quick-cash-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+                    <button type="button" class="btn-quick" onclick="setQuickCash(5000)">5,000</button>
+                    <button type="button" class="btn-quick" onclick="setQuickCash(10000)">10,000</button>
+                    <button type="button" class="btn-quick" onclick="setQuickCash(20000)">20,000</button>
+                    <button type="button" class="btn-quick" onclick="setQuickCash(50000)">50,000</button>
+                    <button type="button" class="btn-quick" onclick="setQuickCash(100000)">100,000</button>
+                    <button type="button" class="btn-quick exact" onclick="setExactCash()">ພໍດີ (Exact)</button>
+                </div>
+            </div>
+            
+            <div id="change-row" style="background: #f0fdf4; border: 2px solid #bbf7d0; border-radius: 12px; padding: 15px; text-align: center; margin-bottom: 20px; display: none;">
+                <div style="font-size: 0.9rem; color: #166534; font-weight: 600; text-transform: uppercase;">ເງິນທອນ (Change)</div>
+                <div id="modal-change" style="font-size: 3rem; font-weight: 800; color: #15803d; line-height: 1;">0 ₭</div>
+            </div>
+
+            <!-- Transfer Info Section (QR Code) -->
+            <div id="transfer-info" style="display:none; margin-top: 1rem; text-align: center; border-top: 1px dashed #e2e8f0; padding-top: 1rem;">
+                <h4 style="margin-bottom: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">ສະແກນເພື່ອໂອນເງິນ</h4>
+                <div id="qr-container" style="margin-bottom: 0.75rem;">
+                    <img id="modal-qr-image" src="" alt="QR Code" style="max-width: 180px; border: 4px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 12px;">
+                </div>
+                <div id="bank-details" style="background: #f8fafc; padding: 10px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 0.85rem;">
+                    <div id="modal-bank-name" style="font-weight: 800; color: var(--primary);"></div>
+                    <div id="modal-bank-acc-name" style="margin: 2px 0;"></div>
+                    <div id="modal-bank-acc-num" style="font-family: monospace; font-size: 1.1rem; font-weight: 700; color: var(--text-primary); background: white; padding: 2px 10px; border-radius: 4px; border: 1px solid #cbd5e1; display: inline-block; margin-top: 4px;"></div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2rem;">
+                <button class="btn btn-cancel" onclick="closePaymentModal()">ຍົກເລີກ</button>
+                <button class="btn btn-pay-cash" id="btn-confirm-payment" onclick="processPayment()">ຢືນຢັນການຈ່າຍ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Scanner Modal -->
+    <div class="modal-overlay" id="camera-modal">
+        <div class="modal-content" style="width: 500px; max-width: 95%;">
+            <div class="modal-header">ສະແກນບາໂຄດຜ່ານກ້ອງ</div>
+            <div id="reader" style="width: 100%; min-height: 300px; border-radius: 8px; overflow: hidden; background: #000;"></div>
+            <div style="margin-top: 1.5rem;">
+                <button class="btn btn-cancel" style="width: 100%;" onclick="closeCameraModal()">ປິດກ້ອງ (Close)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS Logic -->
+    <script src="js/pos.js"></script>
+</body>
+</html>
