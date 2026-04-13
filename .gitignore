@@ -1,0 +1,21 @@
+# PHP / XAMPP .gitignore
+
+# Database logs and backups
+api/db_backup_*.sql
+*.sql
+
+# Uploads - Archive code but not the images themselves
+uploads/products/*
+uploads/qr_code/*
+!uploads/products/.gitkeep
+!uploads/qr_code/.gitkeep
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Environment/Secrets
+# If you ever create a config.php with real passwords, uncomment the line below:
+# config.php
