@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ຈັດການພະນັກງານ - Staff Management (Static)</title>
+    <link rel="stylesheet" href="css/staff.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="js/api_mock.js"></script>
+</head>
+<body>
+
+    <nav class="top-nav">
+        <h1><i class="fas fa-users"></i> ລະບົບຈັດການພະນັກງານ</h1>
+        <div style="display: flex; gap: 1rem;">
+            <a href="settings.html"><i class="fas fa-cog"></i> ຕັ້ງຄ່າຮ້ານ</a>
+            <a href="pos.html"><i class="fas fa-cash-register"></i> ກັບຄືນໜ້າຂາຍ</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header-actions">
+            <div>
+                <h2 style="font-size: 1.5rem; color: var(--text);">ລາຍຊື່ພະນັກງານທັງໝົດ</h2>
+                <p style="color: var(--text-light); font-size: 0.9rem;">ຈັດການຂໍ້ມູນສ່ວນຕົວ ແລະ ສິດການເຂົ້າໃຊ້ລະບົບ</p>
+            </div>
+            <button class="btn btn-primary" onclick="openModal()">
+                <i class="fas fa-plus"></i> ເພີ່ມພະນັກງານໃໝ່
+            </button>
+        </div>
+
+        <div id="staffGrid" class="staff-grid">
+            <!-- Staff cards will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Staff Modal -->
+    <div id="staffModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modalTitle" style="margin-bottom: 2rem;">ເພີ່ມຂໍ້ມູນພະນັກງານ</h2>
+            <form id="staffForm">
+                <input type="hidden" name="id" id="staffId">
+                <div class="form-grid">
+                    <div class="form-group full">
+                        <label>ຊື່ ແລະ ນາມສະກຸນ *</label>
+                        <input type="text" name="full_name" id="fullName" placeholder="ເຊັ່ນ: ສົມພອນ ດີດີ" required>
+                    </div>
+                    <div class="form-group">
+                        <label>ຊື່ຜູ້ໃຊ້ (Username) *</label>
+                        <input type="text" name="username" id="userName" placeholder="ສຳລັບເຂົ້າລະບົບ" required>
+                    </div>
+                    <div class="form-group">
+                        <label>ລະຫັດຜ່ານ (Password) <span id="pwHint" style="color: #64748b; font-size: 0.7rem; display: none;">(ປະຫວ່າງໄວ້ຖ້າບໍ່ປ່ຽນ)</span></label>
+                        <input type="password" name="password" id="password" placeholder="ລະຫັດຜ່ານ">
+                    </div>
+                    <div class="form-group">
+                        <label>ເບີໂທລະສັບ</label>
+                        <input type="text" name="phone" id="phone" placeholder="020...">
+                    </div>
+                    <div class="form-group">
+                        <label>ບົດບາດ (Role)</label>
+                        <select name="role" id="role">
+                            <option value="cashier">ພະນັກງານຂາຍ (Cashier)</option>
+                            <option value="admin">ແອັດມິນ (Administrator)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>ເງິນເດືອນ (Salary)</label>
+                        <input type="number" name="salary" id="salary" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>ວັນທີເລີ່ມວຽກ (Join Date)</label>
+                        <input type="date" name="join_date" id="joinDate">
+                    </div>
+                    <div class="form-group full">
+                        <label>ທີ່ຢູ່</label>
+                        <textarea name="address" id="address" rows="2" placeholder="ບ້ານ, ເມືອງ, ແຂວງ..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>ສະຖານະພະນັກງານ</label>
+                        <select name="is_active" id="isActive">
+                            <option value="1">ເປີດໃຊ້ງານ (Active)</option>
+                            <option value="0">ປິດໃຊ້ງານ (Inactive)</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 2rem; border-top: 1px solid #e2e8f0; padding-top: 1.5rem;">
+                    <button type="button" class="btn" style="background: #e2e8f0;" onclick="closeModal()">ຍົກເລີກ</button>
+                    <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center;">ບັນທຶກຂໍ້ມູນ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="alertBox" class="alert"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = typeof APIMock !== 'undefined' ? APIMock.getCurrentUser() : null;
+            if (!user) { window.location.href = 'index.html'; return; }
+            if (user.role !== 'admin') {
+                alert('ແຈ້ງເຕືອນ: ທ່ານບໍ່ມີສິດເຂົ້າເຖິງໜ້ານີ້! (ສະເພາະແອັດມິນເທົ່ານັ້ນ)');
+                window.location.href = 'pos.html';
+                return;
+            }
+            loadStaff();
+        });
+
+        let staffList = [];
+
+        async function loadStaff() {
+            try {
+                const res = await APIMock.getStaffList();
+                if (res.success) {
+                    staffList = res.data;
+                    renderStaff(res.data);
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function renderStaff(data) {
+            const grid = document.getElementById('staffGrid');
+            grid.innerHTML = '';
+            
+            data.forEach(s => {
+                const badge = s.role === 'admin' ? 'badge-admin' : 'badge-cashier';
+                const statusIcon = s.is_active == 1 ? 'fa-check-circle' : 'fa-times-circle';
+                const statusColor = s.is_active == 1 ? '#22c55e' : '#ef4444';
+                
+                const card = document.createElement('div');
+                card.className = 'staff-card';
+                card.innerHTML = `
+                    <div style="position: absolute; top: 15px; right: 15px; color: ${statusColor}; font-size: 1.2rem;">
+                        <i class="fas ${statusIcon}"></i>
+                    </div>
+                    <div class="staff-header">
+                        <div class="staff-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="staff-info">
+                            <h3>${s.full_name || 'ບໍ່ມີຊື່'}</h3>
+                            <span class="badge ${badge}">${s.role.toUpperCase()}</span>
+                        </div>
+                    </div>
+                    <div class="staff-details">
+                        <div class="detail-item">
+                            <label>ຊື່ຜູ້ໃຊ້</label>
+                            <p>${s.username}</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>ເບີໂທລະສັບ</label>
+                            <p>${s.phone || '-'}</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>ເງິນເດືອນ</label>
+                            <p>${formatCurrency(s.salary)} ₭</p>
+                        </div>
+                        <div class="detail-item">
+                            <label>ວັນທີເລີ່ມວຽກ</label>
+                            <p>${s.join_date || '-'}</p>
+                        </div>
+                    </div>
+                    <div class="staff-actions">
+                        <button class="btn btn-edit" onclick="editStaff('${s.id}')">
+                            <i class="fas fa-edit"></i> ແກ້ໄຂ
+                        </button>
+                        <button class="btn btn-delete" onclick="handleDelete('${s.id}')">
+                            <i class="fas fa-trash"></i> ລຶບ
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function editStaff(id) {
+            const staff = staffList.find(s => s.id == id);
+            if (staff) openModal(staff);
+        }
+
+        function openModal(staff = null) {
+            const form = document.getElementById('staffForm');
+            form.reset();
+            document.getElementById('staffId').value = staff ? staff.id : '';
+            document.getElementById('fullName').value = staff ? staff.full_name : '';
+            document.getElementById('userName').value = staff ? staff.username : '';
+            document.getElementById('phone').value = staff ? staff.phone : '';
+            document.getElementById('address').value = staff ? staff.address : '';
+            document.getElementById('salary').value = staff ? staff.salary : 0;
+            document.getElementById('joinDate').value = staff ? staff.join_date : '';
+            document.getElementById('role').value = staff ? staff.role : 'cashier';
+            document.getElementById('isActive').value = staff ? staff.is_active : 1;
+            
+            document.getElementById('modalTitle').innerText = staff ? 'ແກ້ໄຂຂໍ້ມູນພະນັກງານ' : 'ເພີ່ມຂໍ້ມູນພະນັກງານ';
+            document.getElementById('password').required = !staff;
+            document.getElementById('pwHint').style.display = staff ? 'inline' : 'none';
+            
+            document.getElementById('staffModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('staffModal').classList.remove('show');
+        }
+
+        document.getElementById('staffForm').onsubmit = async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = {};
+            formData.forEach((value, key) => data[key] = value);
+
+            try {
+                const res = await APIMock.saveStaff(data);
+                showAlert(res.success ? 'success' : 'danger', res.message);
+                if (res.success) {
+                    closeModal();
+                    loadStaff();
+                }
+            } catch (e) { showAlert('danger', 'Error processing request'); }
+        };
+
+        async function handleDelete(id) {
+            if (!confirm('ຢືນຢັນການລຶບພະນັກງານຜູ້ນີ້? (ຂໍ້ມູນຈະຖຶກລຶບຖາວອນ)')) return;
+            try {
+                const res = await APIMock.deleteStaff(id);
+                showAlert(res.success ? 'success' : 'danger', res.message);
+                if (res.success) loadStaff();
+            } catch (e) { showAlert('danger', 'Error deleting staff'); }
+        }
+
+        function showAlert(type, msg) {
+            const el = document.getElementById('alertBox');
+            el.className = 'alert ' + (type === 'success' ? 'show alert-success' : 'show alert-danger');
+            el.innerText = msg;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('lo-LA').format(amount || 0);
+        }
+    </script>
+</body>
+</html>

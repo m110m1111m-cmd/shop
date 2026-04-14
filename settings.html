@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ຕັ້ງຄ່າລະບົບ - Settings (Static)</title>
+    <link rel="stylesheet" href="css/settings.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="js/api_mock.js"></script>
+</head>
+<body>
+
+    <nav class="top-nav">
+        <h1><i class="fas fa-cog"></i> ຕັ້ງຄ່າລະບົບ Admin</h1>
+        <a href="pos.html"><i class="fas fa-cash-register"></i> ກັບຄືນໜ້າຂາຍ</a>
+    </nav>
+
+    <div class="container">
+        <div id="mainAlert" class="alert"></div>
+
+        <div class="settings-card">
+            <div class="settings-tabs">
+                <button class="tab-btn active" onclick="showTab(event, 'shop')">
+                    <i class="fas fa-store"></i> ຂໍ້ມູນຮ້ານ
+                </button>
+                <button class="tab-btn" onclick="showTab(event, 'finance')">
+                    <i class="fas fa-wallet"></i> ການເງິນ & ພາສີ
+                </button>
+                <button class="tab-btn" onclick="showTab(event, 'receipt')">
+                    <i class="fas fa-receipt"></i> ການຕັ້ງຄ່າໃບບິນ
+                </button>
+                <button class="tab-btn" onclick="showTab(event, 'maintenance')">
+                    <i class="fas fa-tools"></i> ບຳລຸງຮັກສາ
+                </button>
+            </div>
+
+            <div class="settings-content">
+                <!-- Shop Profile Tab -->
+                <div id="shopTab" class="tab-pane active">
+                    <h2><i class="fas fa-id-card"></i> ໂປຣໄຟລ໌ຮ້ານ</h2>
+                    <form id="shopForm">
+                        <div class="section-card">
+                            <div class="form-group">
+                                <label>ຊື່ຮ້ານ</label>
+                                <input type="text" name="shop_name" id="shop_name" required>
+                            </div>
+                            <div class="form-group">
+                                <label>ເບີໂທລະສັບ</label>
+                                <input type="text" name="shop_phone" id="shop_phone">
+                            </div>
+                            <div class="form-group">
+                                <label>ທີ່ຢູ່ຮ້ານ</label>
+                                <textarea name="shop_address" id="shop_address" rows="3"></textarea>
+                            </div>
+                            <div class="form-group" style="display: flex; gap: 10px;">
+                                <div style="flex: 1;">
+                                    <label>ເວລາເປີດຮ້ານ (Open Time)</label>
+                                    <input type="time" name="open_time" id="open_time">
+                                </div>
+                                <div style="flex: 1;">
+                                    <label>ເວລາປິດຮ້ານ (Close Time)</label>
+                                    <input type="time" name="close_time" id="close_time">
+                                </div>
+                            </div>
+                            <div class="form-group" style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8fafc; border-radius: 8px;">
+                                <input type="checkbox" name="auto_close_enabled" id="auto_close_enabled" value="1" style="width: 20px; height: 20px;">
+                                <label style="margin: 0; cursor: pointer;" for="auto_close_enabled">ປິດລະບົບຂາຍອັດຕະໂນມັດ ນອກເວລາເຮັດວຽກ (Auto-Close POS)</label>
+                            </div>
+                            <div class="form-group" style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8fafc; border-radius: 8px; margin-top: -10px;">
+                                <input type="checkbox" name="low_stock_enabled" id="low_stock_enabled" value="1" style="width: 20px; height: 20px;">
+                                <label style="margin: 0; cursor: pointer;" for="low_stock_enabled">ເປີດການແຈ້ງເຕືອນສິນຄ້າໃກ້ໝົດ (Low Stock Alerts)</label>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
+                                <i class="fas fa-save"></i> ບັນທຶກຂໍ້ມູນຮ້ານ
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Financial Tab -->
+                <div id="financeTab" class="tab-pane">
+                    <h2><i class="fas fa-coins"></i> ການຕັ້ງຄ່າທາງດ້ານການເງິນ (Financial)</h2>
+                    <form id="financeForm">
+                        <div class="section-card grid-2">
+                            <div class="form-group">
+                                <label>ສະກຸນເງິນ (Currency)</label>
+                                <select name="currency_symbol" id="currency_symbol" class="form-control">
+                                    <option value="₭">ກີບ (₭)</option>
+                                    <option value="฿">ບາດ (฿)</option>
+                                    <option value="$">ໂດລາ ($)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>ຈຸດທົດສະນິຍົມ (Decimal Places)</label>
+                                <select name="decimal_places" id="decimal_places" class="form-control">
+                                    <option value="0">0 (ບໍ່ມີ)</option>
+                                    <option value="2">2 (.00)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="section-card grid-2">
+                            <div class="form-group">
+                                <label>ພາສີ VAT (%)</label>
+                                <input type="number" name="vat_rate" id="vat_rate" step="0.01" value="7">
+                            </div>
+                            <div class="form-group">
+                                <label>ຮູບແບບການຄິດໄລ່</label>
+                                <select name="vat_type" id="vat_type" class="form-control">
+                                    <option value="exclusive">ບວກຕ່າງຫາກ (Exclusive: Price + Tax)</option>
+                                    <option value="inclusive">ລວມໃນລາຄາສິນຄ້າ (Inclusive: Tax inside Price)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <h2><i class="fas fa-qrcode"></i> ຂໍ້ມູນການຊຳລະເງິນ (F9 Payment)</h2>
+                        <div class="section-card">
+                            <div class="form-group">
+                                <label>ຊື່ທະນາຄານ (Bank Name)</label>
+                                <input type="text" name="bank_name" id="bank_name" placeholder="BCEL, OnePay, etc.">
+                            </div>
+                            <div class="form-group">
+                                <label>ຊື່ບັນຊີ (Account Name)</label>
+                                <input type="text" name="bank_account_name" id="bank_account_name">
+                            </div>
+                            <div class="form-group">
+                                <label>ເລກບັນຊີ (Account Number)</label>
+                                <input type="text" name="bank_account_number" id="bank_account_number">
+                            </div>
+                            
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> ບັນທຶກການຕັ້ງຄ່າທາງດ້ານການເງິນ
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Receipt Tab -->
+                <div id="receiptTab" class="tab-pane">
+                    <h2><i class="fas fa-print"></i> ການຕັ້ງຄ່າໃບບິນ (Receipt Settings)</h2>
+                    <form id="receiptForm">
+                        <div class="section-card">
+                            <div class="form-group">
+                                <label>ຂໍ້ຄວາມເທິງຫົວບິນ (Header Message)</label>
+                                <textarea name="receipt_header" id="receipt_header" rows="3" placeholder="Welcome to Our Shop..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>ຂໍ້ຄວາມທ້າຍບິນ (Footer Message)</label>
+                                <textarea name="receipt_footer" id="receipt_footer" rows="3" placeholder="Thank you..."></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> ບັນທຶກການຕັ້ງຄ່າໃບບິນ
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Maintenance Tab -->
+                <div id="maintenanceTab" class="tab-pane">
+                    <h2><i class="fas fa-tools"></i> ບຳລຸງຮັກສາ (Maintenance)</h2>
+                    
+                    <div class="section-card">
+                        <h3><i class="fas fa-database"></i> ຈັດການຂໍ້ມູນ (Data Management)</h3>
+                        <p style="color: #64748b; margin-bottom: 1rem; font-size: 0.9rem;">ລຶບຂໍ້ມູນທັງໝົດໃນ LocalStorage ເພື່ອເລີ່ມຕົ້ນລະບົບໃໝ່.</p>
+                        <button class="btn btn-danger" onclick="resetSystem()" style="width: fit-content;">
+                            <i class="fas fa-trash-alt"></i> ລຶບຂໍ້ມູນທັງໝົດ (Reset System)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = typeof APIMock !== 'undefined' ? APIMock.getCurrentUser() : null;
+            if (!user) { window.location.href = 'index.html'; return; }
+            if (user.role !== 'admin') {
+                alert('ແຈ້ງເຕືອນ: ທ່ານບໍ່ມີສິດເຂົ້າເຖິງໜ້ານີ້! (ສະເພາະແອັດມິນເທົ່ານັ້ນ)');
+                window.location.href = 'pos.html';
+                return;
+            }
+            loadShopInfo();
+        });
+
+        // Tab Navigation
+        function showTab(e, tabName) {
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            e.currentTarget.classList.add('active');
+        }
+
+        // Shop Info
+        async function loadShopInfo() {
+            try {
+                const res = await APIMock.getSettings();
+                if (res.success) {
+                    const data = res.data;
+                    document.getElementById('shop_name').value = data.shop_name || 'My Shop';
+                    document.getElementById('shop_phone').value = data.shop_phone || '';
+                    document.getElementById('shop_address').value = data.shop_address || '';
+                    document.getElementById('open_time').value = data.open_time || '08:00';
+                    document.getElementById('close_time').value = data.close_time || '20:00';
+                    document.getElementById('auto_close_enabled').checked = data.auto_close_enabled === '1';
+                    document.getElementById('low_stock_enabled').checked = data.low_stock_enabled === '1';
+                    
+                    // Finance Info
+                    document.getElementById('currency_symbol').value = data.currency_symbol || '₭';
+                    document.getElementById('decimal_places').value = data.decimal_places || '0';
+                    document.getElementById('vat_rate').value = data.vat_rate || '0';
+                    document.getElementById('vat_type').value = data.vat_type || 'exclusive';
+                    document.getElementById('bank_name').value = data.bank_name || '';
+                    document.getElementById('bank_account_name').value = data.bank_account_name || '';
+                    document.getElementById('bank_account_number').value = data.bank_account_number || '';
+                    
+                    // Receipt Info
+                    document.getElementById('receipt_header').value = data.receipt_header || '';
+                    document.getElementById('receipt_footer').value = data.receipt_footer || '';
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        document.getElementById('shopForm').onsubmit = handleFormSubmit;
+        document.getElementById('financeForm').onsubmit = handleFormSubmit;
+        document.getElementById('receiptForm').onsubmit = handleFormSubmit;
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = {};
+            formData.forEach((value, key) => data[key] = value);
+            
+            // Special handling for checkboxes
+            if (this.id === 'shopForm') {
+                data.low_stock_enabled = document.getElementById('low_stock_enabled').checked ? '1' : '0';
+                data.auto_close_enabled = document.getElementById('auto_close_enabled').checked ? '1' : '0';
+            }
+
+            try {
+                const res = await APIMock.updateSettings(data);
+                showAlert(res.success ? 'success' : 'danger', res.message);
+                if (res.success) loadShopInfo();
+            } catch (e) { showAlert('danger', 'Error updating settings'); }
+        }
+
+        function showAlert(type, msg) {
+            const el = document.getElementById('mainAlert');
+            el.className = 'alert alert-' + type;
+            el.innerText = msg;
+            el.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
+
+        function resetSystem() {
+            if (confirm('ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບຂໍ້ມູນທັງໝົດ? ຂໍ້ມູນສິນຄ້າ ແລະ ຍອດຂາຍຈະຫາຍໄປໝົດ!')) {
+                localStorage.clear();
+                window.location.reload();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -223,3 +223,6 @@ body {
     outline: none;
 }
 .form-group input:focus { border-color: var(--primary); }
+
+.modal-overlay.show { display: flex; }
+.alert.show { display: block; }

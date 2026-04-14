@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Login - ເຂົ້າສູ່ລະບົບ</title>
+    <link rel="stylesheet" href="css/login.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="js/api_mock.js"></script>
+</head>
+<body>
+    <div class="bg-shape bg-shape1"></div>
+    <div class="bg-shape bg-shape2"></div>
+
+    <div class="login-container">
+        <div class="login-header">
+            <h1><i class="fa-solid fa-store"></i> Shop POS</h1>
+            <p>ກະລຸນາເຂົ້າສູ່ລະບົບເພື່ອດຳເນີນການ</p>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+
+        <form id="loginForm">
+            <div class="input-group">
+                <label for="username">ຊື່ຜູ້ໃຊ້ (Username)</label>
+                <div style="position: relative;">
+                    <i class="fa-solid fa-user" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.5);"></i>
+                    <input type="text" id="username" name="username" placeholder="ປ້ອນຊື່ຜູ້ໃຊ້" required style="padding-left: 45px;">
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="password">ລະຫັດຜ່ານ (Password)</label>
+                <div style="position: relative;">
+                    <i class="fa-solid fa-lock" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.5);"></i>
+                    <input type="password" id="password" name="password" placeholder="ປ້ອນລະຫັດຜ່ານ" required style="padding-left: 45px;">
+                </div>
+            </div>
+            <button type="submit" class="btn-login" id="loginBtn">ເຂົ້າສູ່ລະບົບ</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('loginBtn');
+            const errorMsg = document.getElementById('errorMessage');
+            
+            // UI Feedback
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> ກຳລັງກວດສອບ...';
+            btn.disabled = true;
+            errorMsg.style.display = 'none';
+
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+
+            // Use APIMock instead of fetch
+            try {
+                const result = await window.APIMock.login(user, pass);
+                
+                if (result.success) {
+                    btn.innerHTML = '<i class="fa-solid fa-check"></i> ສຳເລັດ';
+                    btn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+                    setTimeout(() => {
+                        window.location.href = 'pos.html';
+                    }, 500);
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (err) {
+                // Show error
+                errorMsg.textContent = err.message || 'ເກີດຂໍ້ຜິດພາດໃນການເຂົ້າສູ່ລະບົບ';
+                errorMsg.style.display = 'block';
+                btn.innerHTML = 'ເຂົ້າສູ່ລະບົບ';
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

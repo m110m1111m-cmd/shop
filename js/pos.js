@@ -26,6 +26,22 @@ barcodeInput.addEventListener('blur', () => {
 
 // Initialization
 document.addEventListener('DOMContentLoaded', () => {
+    const user = typeof APIMock !== 'undefined' ? APIMock.getCurrentUser() : null;
+    if (!user) {
+        window.location.href = 'index.html';
+        return;
+    }
+    
+    const usernameEl = document.getElementById('display-username');
+    if (usernameEl) {
+        usernameEl.innerText = user.name || user.username;
+    }
+
+    if (user.role !== 'admin') {
+        const adminLinks = document.querySelectorAll('.admin-only');
+        adminLinks.forEach(el => el.style.display = 'none');
+    }
+
     loadSettings();
     loadCategories();
     loadProductGrid('all');
@@ -45,8 +61,7 @@ let shopSettings = {
 
 async function loadSettings() {
     try {
-        const response = await fetch('api/settings.php?action=get_shop_info');
-        const result = await response.json();
+        const result = await APIMock.getSettings();
         if (result.success) {
             shopSettings = { ...shopSettings, ...result.data };
             
@@ -58,14 +73,99 @@ async function loadSettings() {
             document.querySelectorAll('.currency-symbol').forEach(el => {
                 el.innerText = shopSettings.currency_symbol;
             });
+            
+            // Check Shop Open/Close status
+            checkShopStatus();
+            if (!window.shopStatusInterval) {
+                window.shopStatusInterval = setInterval(checkShopStatus, 60000); // Check every minute
+            }
         }
     } catch (e) { console.error('Error loading settings:', e); }
 }
 
+let isShopClosed = false;
+
+function checkShopStatus() {
+    if (!shopSettings.open_time || !shopSettings.close_time) return;
+
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const [openH, openM] = shopSettings.open_time.split(':').map(Number);
+    const [closeH, closeM] = shopSettings.close_time.split(':').map(Number);
+    const openMinutes = openH * 60 + (openM || 0);
+    const closeMinutes = closeH * 60 + (closeM || 0);
+
+    let isOpen = true;
+    if (openMinutes < closeMinutes) {
+        isOpen = currentMinutes >= openMinutes && currentMinutes < closeMinutes;
+    } else if (openMinutes > closeMinutes) {
+        isOpen = currentMinutes >= openMinutes || currentMinutes < closeMinutes;
+    }
+
+    const badge = document.getElementById('shop-status-badge');
+    if (badge) {
+        badge.style.display = 'inline-block';
+        if (isOpen) {
+            badge.innerText = '🟢 ເປີດຮ້ານ';
+            badge.style.background = '#e6f4ea';
+            badge.style.color = '#1e8e3e';
+        } else {
+            badge.innerText = '🔴 ປິດຮ້ານ';
+            badge.style.background = '#fce8e8';
+            badge.style.color = '#dc2626';
+        }
+    }
+
+    // Auto-close feature
+    const grid = document.getElementById('product-grid');
+    const bInput = document.getElementById('barcode-input');
+    
+    if (shopSettings.auto_close_enabled === '1') {
+        if (!isOpen) {
+            isShopClosed = true;
+            if (grid) grid.style.pointerEvents = 'none';
+            if (grid) grid.style.opacity = '0.4';
+            if (bInput) bInput.disabled = true;
+            
+            if (!document.getElementById('shop-closed-overlay')) {
+                const overlay = document.createElement('div');
+                overlay.id = 'shop-closed-overlay';
+                overlay.innerHTML = `
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(220, 38, 38, 0.95); color: white; padding: 30px; border-radius: 12px; font-size: 1.5rem; font-weight: bold; text-align: center; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 350px;">
+                        <i class="fas fa-store-alt-slash" style="font-size: 3rem; margin-bottom: 15px; display: block;"></i>
+                        ປິດບໍລິການຊົ່ວຄາວ<br>
+                        <small style="font-size: 1rem; font-weight: 400; display: block; margin-top: 10px;">ເວລາເຮັດວຽກ: ${shopSettings.open_time} - ${shopSettings.close_time}</small>
+                    </div>
+                `;
+                const selPanel = document.querySelector('.selection-panel');
+                if (selPanel) {
+                    selPanel.style.position = 'relative';
+                    selPanel.appendChild(overlay);
+                }
+            }
+        } else {
+            isShopClosed = false;
+            if (grid) grid.style.pointerEvents = 'auto';
+            if (grid) grid.style.opacity = '1';
+            if (bInput) bInput.disabled = false;
+            const overlay = document.getElementById('shop-closed-overlay');
+            if (overlay) overlay.remove();
+        }
+    } else {
+        // If auto-close is disabled but system was previously disabled
+        isShopClosed = false;
+        if (grid) grid.style.pointerEvents = 'auto';
+        if (grid) grid.style.opacity = '1';
+        if (bInput) bInput.disabled = false;
+        const overlay = document.getElementById('shop-closed-overlay');
+        if (overlay) overlay.remove();
+    }
+}
+
 async function loadCategories() {
     try {
-        const response = await fetch('api/inventory.php?action=get_categories');
-        const result = await response.json();
+        const result = await APIMock.getCategories();
         if (result.success) {
             const bar = document.getElementById('category-bar');
             result.data.forEach(cat => {
@@ -84,8 +184,7 @@ async function loadProductGrid(catId = 'all') {
     grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 2rem; color: #888;"><i class="fas fa-spinner fa-spin"></i> ກຳລັງໂຫຼດສິນຄ້າ...</div>';
     
     try {
-        const response = await fetch('api/inventory.php?action=get_all_products');
-        const result = await response.json();
+        const result = await APIMock.getProducts();
         if (result.success) {
             allProducts = result.data;
             renderGrid(allProducts);
@@ -194,8 +293,7 @@ function updateSearchSelection(results) {
 
 async function searchProducts(query) {
     try {
-        const response = await fetch(`api/inventory.php?action=search_products&query=${encodeURIComponent(query)}`);
-        const result = await response.json();
+        const result = await APIMock.searchProducts(query);
 
         if (result.success && result.data.length > 0) {
             renderSearchResults(result.data);
@@ -252,8 +350,7 @@ document.addEventListener('keydown', function(e) {
 
 async function fetchProductByBarcode(barcode) {
     try {
-        const response = await fetch(`api/inventory.php?action=get_product&barcode=${barcode}`);
-        const result = await response.json();
+        const result = await APIMock.getProductByBarcode(barcode);
 
         if (result.success) {
             addToCart(result.data);
@@ -564,13 +661,7 @@ async function processPayment() {
     };
 
     try {
-        const response = await fetch('api/pos.php?action=checkout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        
-        const result = await response.json();
+        const result = await APIMock.checkout(payload);
         
         if (result.success) {
             alert('ຊຳລະເງິນສຳເລັດ! / Payment successful!');
@@ -611,7 +702,11 @@ function closeCameraModal() {
 
 function startCamera() {
     html5QrCode = new Html5Qrcode("reader");
-    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+    const config = { 
+        fps: 10, 
+        qrbox: { width: 300, height: 120 }, // ປັບເປັນຮູບສີ່ແຈສາກຍາວ ເພື່ອສະແກນບາໂຄດສິນຄ້າໄດ້ດີຂຶ້ນ
+        disableFlip: false 
+    };
 
     html5QrCode.start(
         { facingMode: "environment" }, 
@@ -652,6 +747,9 @@ function handleScanSuccess(code) {
 
     // Play beep sound
     playScanBeep();
+
+    // Close camera on successful scan
+    closeCameraModal();
 
     // Fetch and add to cart
     fetchProductByBarcode(code);

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ປະຫວັດການຂາຍ - Sales Management (Static)</title>
+    <link rel="stylesheet" href="css/sales.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="js/api_mock.js"></script>
+</head>
+<body>
+
+    <nav class="top-nav">
+        <h1><i class="fas fa-chart-line"></i> ປະຫວັດການຂາຍລວມ</h1>
+        <a href="pos.html"><i class="fas fa-cash-register"></i> ກັບຄືນໜ້າຂາຍ (POS)</a>
+    </nav>
+
+    <div class="container">
+        <!-- Filters -->
+        <div class="filter-card">
+            <div class="input-group">
+                <label>ຕັ້ງແຕ່ວັນທີ</label>
+                <input type="date" id="start-date">
+            </div>
+            <div class="input-group">
+                <label>ເຖິງວັນທີ</label>
+                <input type="date" id="end-date">
+            </div>
+            <button class="btn" onclick="fetchSales()"><i class="fas fa-search"></i> ຄົ້ນຫາ</button>
+            <button class="btn" style="background: #e0e0e0; color: #333; margin-left: 10px;" onclick="resetFilters()"><i class="fas fa-redo"></i> ລີເຊັດ</button>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="summary-stats-container" style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+            <div class="stat-card" style="flex: 1; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center;">
+                <h3 style="color: #64748b; font-size: 0.9rem; margin-bottom: 0.5rem;">ຍອດຂາຍລວມ (Total Sales)</h3>
+                <div id="stat-total-sales" style="font-size: 1.8rem; font-weight: 800; color: #3b82f6;">0 ₭</div>
+            </div>
+            <div class="stat-card" style="flex: 1; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center;">
+                <h3 style="color: #64748b; font-size: 0.9rem; margin-bottom: 0.5rem;">ຍອດເງິນສົດ (Total Cash)</h3>
+                <div id="stat-total-cash" style="font-size: 1.5rem; font-weight: 700; color: #10b981;">0 ₭</div>
+            </div>
+            <div class="stat-card" style="flex: 1; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center;">
+                <h3 style="color: #64748b; font-size: 0.9rem; margin-bottom: 0.5rem;">ຍອດເງິນໂອນ (Total Transfer)</h3>
+                <div id="stat-total-transfer" style="font-size: 1.5rem; font-weight: 700; color: #8b5cf6;">0 ₭</div>
+            </div>
+            <div class="stat-card" style="flex: 1; background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center;">
+                <h3 style="color: #64748b; font-size: 0.9rem; margin-bottom: 0.5rem;">ຈຳນວນບິນ (Total Bills)</h3>
+                <div id="stat-total-bills" style="font-size: 1.5rem; font-weight: 700; color: #f59e0b;">0</div>
+            </div>
+        </div>
+
+        <!-- Sales List -->
+        <div class="sales-card">
+            <table id="sales-table">
+                <thead>
+                    <tr>
+                        <th>ລະຫັດບິນ (Bill ID)</th>
+                        <th>ວັນເວລາ (Time)</th>
+                        <th>ພະນັກງານຂາຍ (Cashier)</th>
+                        <th>ວິທີຊຳລະ (Payment)</th>
+                        <th style="text-align: right;">ຍອດລວມ (Total)</th>
+                    </tr>
+                </thead>
+                <tbody id="sales-tbody">
+                    <!-- Data will be loaded via JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal for Bill Details -->
+    <div class="modal-overlay" id="details-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>ລາຍລະອຽດໃບບິນ: <span id="modal-bill-id"></span></h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div style="max-height: 480px; overflow-y: auto;">
+                <table class="details-table" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>ສິນຄ້າ (Product)</th>
+                            <th style="text-align: center;">ຈຳນວນ (Qty)</th>
+                            <th style="text-align: right;">ລາຄາ (Price)</th>
+                            <th style="text-align: right;">ລວມ (Subtotal)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="details-tbody">
+                        <!-- Details loaded here -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="modal-actions" style="margin-top: 15px; display: flex; gap: 10px; justify-content: space-between; border-top: 1px solid #eee; padding-top: 15px;">
+                <!-- Action buttons -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Edit Sale -->
+    <div class="modal-overlay" id="edit-sale-modal" style="z-index: 2001;">
+        <div class="modal-content" style="width: 400px;">
+            <div class="modal-header">
+                <h2>ແກ້ໄຂບິນ / ປັບປ່ຽນລາຍໄດ້</h2>
+                <button class="close-btn" onclick="document.getElementById('edit-sale-modal').classList.remove('show')">&times;</button>
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">ຍອດລວມ (Total Amount)</label>
+                <input type="number" id="edit-sale-total" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 1.2rem;">
+            </div>
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">ວິທີຊຳລະ (Payment Method)</label>
+                <select id="edit-sale-method" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 1rem;">
+                    <option value="cash">ເງິນສົດ (Cash)</option>
+                    <option value="transfer">ເງິນໂອນ (Transfer)</option>
+                </select>
+            </div>
+            <button class="btn" style="background: #10b981; color: white; width: 100%; justify-content: center;" onclick="saveEditSale()"><i class="fas fa-save"></i> ບັນທຶກການປ່ຽນແປງ</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = typeof APIMock !== 'undefined' ? APIMock.getCurrentUser() : null;
+            if (!user) { window.location.href = 'index.html'; return; }
+            if (user.role !== 'admin') {
+                alert('ແຈ້ງເຕືອນ: ທ່ານບໍ່ມີສິດເຂົ້າເຖິງໜ້ານີ້! (ສະເພາະແອັດມິນເທົ່ານັ້ນ)');
+                window.location.href = 'pos.html';
+                return;
+            }
+            fetchSales();
+        });
+
+        async function fetchSales() {
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            
+            const tbody = document.getElementById('sales-tbody');
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;"><i class="fas fa-spinner fa-spin"></i> ກຳລັງໂຫຼດຂໍ້ມູນ...</td></tr>';
+
+            try {
+                const res = await APIMock.getSales({ start_date: startDate, end_date: endDate });
+
+                if (res.success) {
+                    renderSales(res.data);
+                } else {
+                    throw new Error(res.message || 'Failed to load sales');
+                }
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: red;">${err.message}</td></tr>`;
+            }
+        }
+
+        function renderSales(data) {
+            const tbody = document.getElementById('sales-tbody');
+            tbody.innerHTML = '';
+
+            let totalSales = 0;
+            let totalCash = 0;
+            let totalTransfer = 0;
+            let totalBills = data.length;
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: #777;">ບໍ່ມີຂໍ້ມູນການຂາຍ</td></tr>';
+                document.getElementById('stat-total-sales').innerText = '0 ₭';
+                document.getElementById('stat-total-cash').innerText = '0 ₭';
+                document.getElementById('stat-total-transfer').innerText = '0 ₭';
+                document.getElementById('stat-total-bills').innerText = '0';
+                return;
+            }
+
+            data.forEach(sale => {
+                const amount = parseFloat(sale.total_amount) || 0;
+                totalSales += amount;
+                if (sale.payment_method === 'cash') totalCash += amount;
+                else totalTransfer += amount;
+
+                const tr = document.createElement('tr');
+                tr.className = 'sale-row';
+                tr.onclick = () => openDetails(sale.id);
+
+                const paymentBadge = sale.payment_method === 'cash' 
+                    ? '<span class="badge cash">ເງິນສົດ (Cash)</span>' 
+                    : '<span class="badge transfer">ເງິນໂອນ (Transfer)</span>';
+
+                // Format date nicely
+                const d = new Date(sale.date);
+                const dateStr = d.toLocaleDateString('lo-LA') + ' ' + d.toLocaleTimeString('lo-LA', { hour: '2-digit', minute: '2-digit' });
+
+                tr.innerHTML = `
+                    <td>#${sale.id.toString().slice(-8)}</td>
+                    <td>${dateStr}</td>
+                    <td><i class="fas fa-user-circle"></i> Admin</td>
+                    <td>${paymentBadge}</td>
+                    <td style="text-align: right; font-weight: 600;">${amount.toLocaleString()} ₭</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('stat-total-sales').innerText = totalSales.toLocaleString() + ' ₭';
+            document.getElementById('stat-total-cash').innerText = totalCash.toLocaleString() + ' ₭';
+            document.getElementById('stat-total-transfer').innerText = totalTransfer.toLocaleString() + ' ₭';
+            document.getElementById('stat-total-bills').innerText = totalBills.toLocaleString();
+        }
+
+        function resetFilters() {
+            document.getElementById('start-date').value = '';
+            document.getElementById('end-date').value = '';
+            fetchSales();
+        }
+
+        let currentSale = null;
+
+        async function openDetails(saleId) {
+            const modal = document.getElementById('details-modal');
+            const tbody = document.getElementById('details-tbody');
+            document.getElementById('modal-bill-id').innerText = '#' + saleId.toString().slice(-8);
+            
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;"><i class="fas fa-spinner fa-spin"></i> ໂຫຼດຂໍ້ມູນ...</td></tr>';
+            
+            modal.classList.add('show');
+
+            try {
+                const res = await APIMock.getSaleById(saleId);
+
+                if (res.success) {
+                    const sale = res.data;
+                    currentSale = sale; // Set globally
+                    tbody.innerHTML = '';
+                    
+                    sale.items.forEach(item => {
+                        const price = parseFloat(item.selling_price) || 0;
+                        const qty = parseFloat(item.qty) || 0;
+                        const disc = parseFloat(item.discount_amount) || 0;
+                        const sub = (price * qty) - disc;
+                        
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>
+                                    <strong>${item.name}</strong><br>
+                                    <small style="color: #888;">${item.barcode}</small>
+                                </td>
+                                <td style="text-align: center;">${qty} ${item.unit_name}</td>
+                                <td style="text-align: right;">${price.toLocaleString()} ₭</td>
+                                <td style="text-align: right; font-weight: 500;">${sub.toLocaleString()} ₭</td>
+                            </tr>
+                        `;
+                    });
+
+                    // Totals area
+                    tbody.innerHTML += `
+                        <tr style="border-top: 2px solid #eee;">
+                            <td colspan="3" style="text-align: right; font-weight: 600; padding-top: 15px;">ສ່ວນຫຼຸດ:</td>
+                            <td style="text-align: right; color: #dc2626; padding-top: 15px;">-${(parseFloat(sale.discount_amount) || 0).toLocaleString()} ₭</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" style="text-align: right; font-weight: 600;">ພາສີ (VAT):</td>
+                            <td style="text-align: right;">${(parseFloat(sale.vat_amount) || 0).toLocaleString()} ₭</td>
+                        </tr>
+                        <tr style="font-size: 1.2rem; font-weight: 800;">
+                            <td colspan="3" style="text-align: right; color: var(--text-primary);">ຍອດລວມສຸດທິ:</td>
+                            <td style="text-align: right; color: var(--primary);">${parseFloat(sale.total_amount).toLocaleString()} ₭</td>
+                        </tr>
+                    `;
+
+                    // Action buttons
+                    const actionsDiv = document.getElementById('modal-actions');
+                    actionsDiv.innerHTML = `
+                        <button class="btn" style="background: #ef4444; color: white;" onclick="deleteSale(${sale.id})"><i class="fas fa-trash"></i> ລຶບບິນນີ້</button>
+                        <button class="btn" style="background: #f59e0b; color: white;" onclick="openEditSaleModal()"><i class="fas fa-edit"></i> ແກ້ໄຂ/ປັບປ່ຽນລາຍໄດ້</button>
+                    `;
+                }
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: red;">ຜິດພາດໃນການໂຫຼດຂໍ້ມູນ</td></tr>`;
+            }
+        }
+
+        async function deleteSale(saleId) {
+            if (!confirm('ທ່ານແນ່ໃຈບໍ່ ວ່າຕ້ອງການລຶບບິນນີ້ຖິ້ມ? (ການຈັດການນີ້ບໍ່ສາມາດປ່ຽນຄືນໄດ້)')) return;
+            try {
+                const res = await APIMock.deleteSale(saleId);
+                if (res.success) {
+                    alert(res.message);
+                    closeModal();
+                    fetchSales();
+                } else {
+                    alert(res.message);
+                }
+            } catch (err) { alert('ເກີດຂໍ້ຜິດພາດ'); }
+        }
+
+        function openEditSaleModal() {
+            if (!currentSale) return;
+            document.getElementById('edit-sale-total').value = currentSale.total_amount || 0;
+            document.getElementById('edit-sale-method').value = currentSale.payment_method || 'cash';
+            document.getElementById('edit-sale-modal').classList.add('show');
+        }
+
+        async function saveEditSale() {
+            if (!currentSale) return;
+            const newTotal = document.getElementById('edit-sale-total').value;
+            const newMethod = document.getElementById('edit-sale-method').value;
+
+            const updatedData = {
+                total_amount: parseFloat(newTotal) || 0,
+                payment_method: newMethod
+            };
+
+            try {
+                const res = await APIMock.updateSale(currentSale.id, updatedData);
+                if (res.success) {
+                    alert(res.message);
+                    document.getElementById('edit-sale-modal').classList.remove('show');
+                    openDetails(currentSale.id); // refresh modal
+                    fetchSales(); // refresh list
+                } else {
+                    alert(res.message);
+                }
+            } catch (err) { alert('ເກີດຂໍ້ຜິດພາດ'); }
+        }
+
+        function closeModal() {
+            document.getElementById('details-modal').classList.remove('show');
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('details-modal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>
