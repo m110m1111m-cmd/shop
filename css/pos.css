@@ -524,3 +524,44 @@ body {
     font-size: 1.1rem;
 }
 .btn-remove:hover { color: var(--danger); }
+
+/* Responsive Mobile Layout */
+@media (max-width: 900px) {
+    body {
+        height: auto;
+        overflow: auto;
+    }
+    
+    .pos-container {
+        display: flex;
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .selection-panel {
+        height: auto;
+        max-height: 80vh; 
+        /* keeps the products scrollable on top before cart */
+    }
+    
+    .cart-panel {
+        width: 100%;
+        height: auto;
+        min-height: 60vh;
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .product-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 10px;
+    }
+    
+    .top-bar {
+        flex-wrap: wrap;
+    }
+    
+    .barcode-input-wrapper {
+        width: 100%;
+    }
+}

@@ -227,3 +227,31 @@ tr.sale-row:hover {
     padding-top: 1rem;
     border-top: 2px solid var(--border);
 }
+
+@media (max-width: 900px) {
+    .filter-card {
+        flex-wrap: wrap;
+    }
+    
+    .filter-card .input-group, .filter-card .btn {
+        flex: 1 1 100%;
+    }
+    
+    .summary-stats-container {
+        flex-wrap: wrap;
+    }
+    
+    .summary-stats-container > div {
+        flex: 1 1 calc(50% - 1rem) !important;
+        min-width: 140px;
+    }
+    
+    .sales-card {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    table {
+        min-width: 700px;
+    }
+}

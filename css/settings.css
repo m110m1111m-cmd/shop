@@ -252,3 +252,23 @@ h2 {
 
 .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
 .alert-danger { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+@media (max-width: 900px) {
+    .settings-tabs {
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE 10+ */
+    }
+    .settings-tabs::-webkit-scrollbar {
+        display: none; /* Chrome/Safari */
+    }
+    
+    .grid-2 {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .form-group[style*="gap: 10px"] {
+        flex-direction: column;
+    }
+}
