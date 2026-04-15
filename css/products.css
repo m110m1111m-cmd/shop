@@ -150,6 +150,9 @@ tr:hover {
     z-index: 1000;
     opacity: 0;
     transition: opacity 0.3s ease;
+    padding: 1rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .modal-content {
@@ -161,6 +164,10 @@ tr:hover {
     transform: translateY(20px);
     transition: transform 0.3s ease;
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: auto;
 }
 
 .modal-overlay.show {
@@ -191,6 +198,11 @@ tr:hover {
     font-size: 1.5rem;
     cursor: pointer;
     color: var(--text-light);
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .form-group {
@@ -211,7 +223,17 @@ tr:hover {
     border-radius: 6px;
     outline: none;
     font-family: inherit;
-    font-size: 1rem;
+    font-size: 16px;
+    min-height: 44px;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.form-group select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23777' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
 }
 
 .form-group input:focus, .form-group select:focus {
@@ -256,6 +278,8 @@ tr:hover {
     
     .actions-card .btn {
         width: 100%;
+        min-height: 44px;
+        justify-content: center;
     }
     
     .actions-card > div:last-child {
@@ -273,5 +297,64 @@ tr:hover {
     
     table {
         min-width: 800px;
+    }
+}
+
+@media (max-width: 600px) {
+    .top-nav {
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 1rem;
+        text-align: center;
+    }
+
+    .top-nav h1 {
+        font-size: 1.2rem;
+    }
+
+    .top-nav a {
+        display: block;
+        text-align: center;
+    }
+
+    .container {
+        margin: 1rem auto;
+        padding: 0 0.5rem;
+    }
+
+    .modal-overlay {
+        padding: 0.5rem;
+    }
+
+    .modal-content {
+        padding: 1.25rem;
+        border-radius: 10px;
+        max-height: 95vh;
+    }
+
+    .modal-header h2 {
+        font-size: 1.1rem;
+    }
+
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .form-group input, .form-group select {
+        font-size: 16px;
+        padding: 12px;
+        min-height: 48px;
+    }
+
+    .form-group input[type="file"] {
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    .btn {
+        padding: 12px 20px;
+        font-size: 1rem;
+        min-height: 48px;
     }
 }
